@@ -7,6 +7,10 @@ import (
 
 type ETHAddr [6]byte
 
+func (ea ETHAddr) String() string {
+	return fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", ea[0], ea[1], ea[2], ea[3], ea[4], ea[5])
+}
+
 // bounds need to be checked already
 func sliceToETHADDR(e *ETHAddr, s []byte) {
 	e[0] = s[0]
@@ -17,6 +21,8 @@ func sliceToETHADDR(e *ETHAddr, s []byte) {
 	e[5] = s[5]
 }
 
+// payload len is len(ef.GetPayload())
+// capacity for payload is: cap(ef.GetPayload()) - ef.GetFooterLen()
 type ETHFrame struct {
 	Destination, Source ETHAddr
 	Type                uint16
@@ -29,16 +35,19 @@ type ETHFrame struct {
 
 func OverlayETHFrame(fb []byte) (*ETHFrame, error) {
 	if len(fb) == 0 {
-		fb = make([]byte, 1522)
+		fb = make([]byte, max_framelen)
 	}
 
-	if len(fb) < min_headerandpayload {
-		return nil, fmt.Errorf("NewETHFrame: buffer too small, need at least %d bytes", min_headerandpayload)
+	if len(fb) < min_framelen_with_fcs {
+		return nil, fmt.Errorf(
+			"NewETHFrame: buffer too small, need at least %d bytes",
+			min_headerandpayload)
 	}
 
 	ef := &ETHFrame{}
+	ef.framebuf = fb
 
-	// guarded by len(fb) < min_headerandpayload
+	// guarded by len(fb) < min_framelen_with_fcs
 	return ef, nil
 }
 
@@ -53,19 +62,26 @@ func (ef *ETHFrame) GetHeaderLen() int {
 	return l
 }
 
+func (ef *ETHFrame) GetFooterLen() int {
+	return fcs_len
+}
+
 // header contents will be undefined if you do not call WriteDown() before.
 func (ef *ETHFrame) GetFrameBuf() []byte {
 	return ef.framebuf
 }
 
 func (ef *ETHFrame) GetPayload() []byte {
-	return ef.framebuf[ef.GetHeaderLen():]
+	return ef.framebuf[ef.GetHeaderLen() : len(ef.framebuf)-ef.GetFooterLen()]
 }
 
 func (ef *ETHFrame) SetPayloadLen(npl int) error {
-	nl := npl + ef.GetHeaderLen()
-	if nl < min_headerandpayload {
-		return fmt.Errorf("SetPayloadLen: payload too small, need at least %d bytes", min_headerandpayload-ef.GetHeaderLen())
+	nl := npl + ef.GetHeaderLen() + ef.GetFooterLen()
+	// TODO: check
+	if nl < min_framelen_with_fcs {
+		return fmt.Errorf(
+			"SetPayloadLen: payload too small, need at least %d bytes",
+			min_framelen_with_fcs-ef.GetHeaderLen()-ef.GetFooterLen())
 	}
 
 	maxnl := max_framelen_novlan
@@ -74,11 +90,16 @@ func (ef *ETHFrame) SetPayloadLen(npl int) error {
 	}
 
 	if nl > maxnl {
-		return fmt.Errorf("SetPayloadLen: payload too big, maximum for this configuration is %d bytes", maxnl-ef.GetHeaderLen())
+		return fmt.Errorf(
+			"SetPayloadLen: payload too big, maximum for this configuration is %d bytes",
+			maxnl-ef.GetHeaderLen())
 	}
 
 	if nl > cap(ef.framebuf) {
-		return fmt.Errorf("SetPayloadLen: payload too big for buffer, buffer can hold a %d bytes maximum", nl-ef.GetHeaderLen())
+		return fmt.Errorf(
+			"SetPayloadLen: payload  of %d bytes too big for buffer, buffer can hold a %d bytes maximum",
+			npl,
+			cap(ef.framebuf)-ef.GetFooterLen()-ef.GetHeaderLen())
 	}
 
 	ef.framebuf = ef.framebuf[0:nl]
@@ -102,15 +123,18 @@ func (ef *ETHFrame) WriteDown() error {
 
 	pos += 2
 
+	// TODO: how to deal with the FCS?
+
 	return nil
 }
 
 const (
-	min_framelen_with_fcs = 60
+	min_framelen_with_fcs = 64
 	fcs_len               = 4
 	min_headerandpayload  = min_framelen_with_fcs - fcs_len
 
-	// excluding fcs
-	max_framelen_novlan = 1518
-	max_framelen_vlan   = 1522
+	// inclduing fcs
+	max_framelen_novlan = 1522
+	max_framelen_vlan   = 1526
+	max_framelen        = max_framelen_vlan
 )
