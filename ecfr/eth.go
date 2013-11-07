@@ -12,13 +12,15 @@ func (ea ETHAddr) String() string {
 }
 
 // bounds need to be checked already
-func sliceToETHADDR(e *ETHAddr, s []byte) {
+func sliceToETHADDR(s []byte) ETHAddr {
+	var e ETHAddr
 	e[0] = s[0]
 	e[1] = s[1]
 	e[2] = s[2]
 	e[3] = s[3]
 	e[4] = s[4]
 	e[5] = s[5]
+	return e
 }
 
 // payload len is len(ef.GetPayload())
@@ -47,7 +49,17 @@ func OverlayETHFrame(fb []byte) (*ETHFrame, error) {
 	ef := &ETHFrame{}
 	ef.framebuf = fb
 
+	// TODO: read this information at overlay time?
+
 	// guarded by len(fb) < min_framelen_with_fcs
+	ef.Destination = sliceToETHADDR(fb[offsetDestination:offsetSource])
+	ef.Source = sliceToETHADDR(fb[offsetSource:offsetVLANOrType])
+	ef.Type, _ = getUint16(fb[offsetVLANOrType:])
+	if ef.Type == etherTypeVLAN {
+		ef.UseVlan = true
+		ef.VLANTCI, _ = getUint16(fb[offsetVLANTCI:])
+
+	}
 	return ef, nil
 }
 
@@ -128,6 +140,7 @@ func (ef *ETHFrame) WriteDown() error {
 	return nil
 }
 
+// TODO: +4 bytes of FCS for future compatibility?
 const (
 	min_framelen_with_fcs = 64
 	fcs_len               = 4
@@ -137,4 +150,11 @@ const (
 	max_framelen_novlan = 1522
 	max_framelen_vlan   = 1526
 	max_framelen        = max_framelen_vlan
+
+	offsetDestination = 0
+	offsetSource      = 6
+	offsetVLANOrType  = 12
+	offsetVLANTCI     = 14
+
+	etherTypeVLAN = 0x8100
 )
