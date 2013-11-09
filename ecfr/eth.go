@@ -54,10 +54,10 @@ func OverlayETHFrame(fb []byte) (*ETHFrame, error) {
 	// guarded by len(fb) < min_framelen_with_fcs
 	ef.Destination = sliceToETHADDR(fb[offsetDestination:offsetSource])
 	ef.Source = sliceToETHADDR(fb[offsetSource:offsetVLANOrType])
-	ef.Type, _ = getUint16(fb[offsetVLANOrType:])
+	ef.Type, _ = getUint16BE(fb[offsetVLANOrType:])
 	if ef.Type == etherTypeVLAN {
 		ef.UseVlan = true
-		ef.VLANTCI, _ = getUint16(fb[offsetVLANTCI:])
+		ef.VLANTCI, _ = getUint16BE(fb[offsetVLANTCI:])
 
 	}
 	return ef, nil
