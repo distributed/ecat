@@ -5,25 +5,25 @@ import (
 )
 
 type Datagram struct {
-	Header         DatagramHeader
+	DatagramHeader
 	Data           []byte
 	WorkingCounter uint16
 }
 
 func (dg *Datagram) Overlay(d []byte) (b []byte, err error) {
 	//fmt.Printf("overlaying datagram over %s\n", spew.Sdump(d))
-	b, err = dg.Header.Overlay(d)
+	b, err = dg.DatagramHeader.Overlay(d)
 	if err != nil {
 		return
 	}
 
-	if len(b) < int(dg.Header.DataLength()) {
-		err = fmt.Errorf("overlaying ecat dgram: need %d bytes of data, have %d", dg.Header.DataLength(), len(b))
+	if len(b) < int(dg.DataLength()) {
+		err = fmt.Errorf("overlaying ecat dgram: need %d bytes of data, have %d", dg.DataLength(), len(b))
 		return
 	}
 
-	dg.Data = b[:dg.Header.DataLength()]
-	b = b[dg.Header.DataLength():]
+	dg.Data = b[:dg.DataLength()]
+	b = b[dg.DataLength():]
 
 	if len(b) < 2 {
 		err = fmt.Errorf("overlaying ecat dgram: need 2 bytes for working counter, got %d", len(b))

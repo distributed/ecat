@@ -30,7 +30,7 @@ func (f *Frame) Overlay(d []byte) (b []byte, err error) {
 			return
 		}
 
-		if f.Datagrams[i].Header.Last() {
+		if f.Datagrams[i].Last() {
 			break
 		}
 	}
