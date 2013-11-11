@@ -17,6 +17,19 @@ func getUint32(b []byte) (uint32, []byte) {
 	return v, b[4:]
 }
 
+func xgetUint8(b []byte) uint8 {
+	return b[0]
+}
+
+func xgetUint16(b []byte) uint16 {
+	return uint16(b[0]) | uint16(b[1])<<8
+}
+
+func xgetUint32(b []byte) uint32 {
+	v := uint32(b[0]) | uint32(b[1])<<8 | uint32(b[2])<<16 | uint32(b[3])<<24
+	return v
+}
+
 func putUint8(b []byte, v uint8) []byte {
 	b[0] = v
 	return b[1:]
