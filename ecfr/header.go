@@ -28,6 +28,11 @@ func (h *Header) Type() uint8 {
 	return uint8(h.Word>>12) & 0x0f
 }
 
+func (h *Header) SetType(t uint8) {
+	h.Word &^= 0xf000
+	h.Word |= uint16(t&0x0f) << 12
+}
+
 func (h *Header) Commit() (d []byte, err error) {
 	putUint16(h.buffer, h.Word)
 	d = h.buffer[:2]
