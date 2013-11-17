@@ -114,7 +114,7 @@ func (f *Frame) NewDatagram(datalen int) (*Datagram, error) {
 	curlen := f.ByteLen()
 	maxlen := len(f.buffer)
 	curfree := maxlen - curlen
-	fmt.Printf("curlen %d, maxlen %d, curfree %d\n", curlen, maxlen, curfree)
+	//fmt.Printf("curlen %d, maxlen %d, curfree %d\n", curlen, maxlen, curfree)
 	if datalen <= curfree {
 		dgram, err := PointDatagramTo(f.buffer[curlen:])
 		if err != nil {
