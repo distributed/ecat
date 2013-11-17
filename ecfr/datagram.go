@@ -277,12 +277,28 @@ func (d DatagramAddress) Offset() uint16 {
 	return uint16(d.Addr32() >> 16)
 }
 
+func (d *DatagramAddress) SetOffset(offs uint16) {
+	d.addr &^= 0xffff0000
+	d.addr |= uint32(offs) << 16
+}
+
 func (d DatagramAddress) PositionOrAddress() uint16 {
 	return uint16(d.Addr32())
 }
 
 func (d *DatagramAddress) IncrementSlaveAddr() {
 	d.addr = (d.addr & 0xffff0000) | ((d.addr + 1) & 0x0000ffff)
+}
+
+func (d *DatagramAddress) IsPhysical() bool {
+	switch d.Type() {
+	case Positional:
+	case Fixed:
+	case Broadcast:
+	default:
+		return false
+	}
+	return true
 }
 
 func PositionalAddr(position int16, offset uint16) DatagramAddress {
@@ -341,4 +357,40 @@ var commandTypeName = map[CommandType]string{
 	LRW:  "LRW",
 	ARMW: "ARMW",
 	FRMW: "FRMW",
+}
+
+func (ct CommandType) DoesRead() bool {
+	switch ct {
+	case APRD:
+	case APRW:
+	case FPRD:
+	case FPRW:
+	case BRD:
+	case BRW:
+	case LRD:
+	case LRW:
+	case ARMW:
+	case FRMW:
+	default:
+		return false
+	}
+	return true
+}
+
+func (ct CommandType) DoesWrite() bool {
+	switch ct {
+	case APWR:
+	case APRW:
+	case FPWR:
+	case FPRW:
+	case BWR:
+	case BRW:
+	case LWR:
+	case LRW:
+	case ARMW:
+	case FRMW:
+	default:
+		return false
+	}
+	return true
 }
