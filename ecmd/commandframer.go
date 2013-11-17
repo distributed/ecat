@@ -2,9 +2,7 @@ package ecmd
 
 import (
 	"errors"
-	"fmt"
 	"github.com/distributed/ecat/ecfr"
-	"log"
 )
 
 const (
@@ -55,7 +53,6 @@ func (cf *CommandFramer) New(datalen int) (*ExecutingCommand, error) {
 
 		}
 	} else {
-		log.Printf("no frame open, getting one")
 		err = cf.newFrame()
 		if err != nil {
 			return nil, err
@@ -148,26 +145,25 @@ func (cf *CommandFramer) Cycle() error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("len(cf.inFrameQueue) %d\n", len(cf.inFrameQueue))
 
-	for i, fr := range cf.inFrameQueue {
-		/*frbuf, err := fr.Commit()
-		if err != nil {
-			return err
-		}
-
-		var f ecfr.Frame
-		_, err = f.Overlay(frbuf)
-		if err != nil {
-			return err
-		}*/
-
-		fmt.Printf("inFrameQueue entry %d len %d\n", i, fr.ByteLen())
-		for _, dgram := range fr.Datagrams {
-			fmt.Println("  ", dgram.Summary())
-		}
-		fmt.Println()
+	//for i, fr := range cf.inFrameQueue {
+	/*frbuf, err := fr.Commit()
+	if err != nil {
+		return err
 	}
+
+	var f ecfr.Frame
+	_, err = f.Overlay(frbuf)
+	if err != nil {
+		return err
+	}*/
+
+	/*fmt.Printf("inFrameQueue entry %d len %d\n", i, fr.ByteLen())
+	for _, dgram := range fr.Datagrams {
+		fmt.Println("  ", dgram.Summary())
+	}
+	fmt.Println()*/
+	//}
 
 	oi := 0
 	for _, infr := range cf.inFrameQueue {
