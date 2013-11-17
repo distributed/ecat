@@ -80,6 +80,7 @@ func (f *UDPFramer) New(maxdatalen int) (fr *ecfr.Frame, err error) {
 func (f *UDPFramer) Cycle() (iframes []*ecfr.Frame, err error) {
 	// TODO: send/receive concurrently to be independent of queue depth?
 
+	// TODO: write deadline?
 	var obytes []byte
 	for _, oframe := range f.oframes {
 		obytes, err = oframe.Commit()
@@ -93,7 +94,9 @@ func (f *UDPFramer) Cycle() (iframes []*ecfr.Frame, err error) {
 		}
 	}
 
-	err = f.sock.SetDeadline(time.Now().Add(f.cycletime))
+	f.oframes = nil
+
+	err = f.sock.SetReadDeadline(time.Now().Add(f.cycletime))
 
 	rbuf := make([]byte, udpReceiveBuflen)
 	for {
