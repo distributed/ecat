@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/distributed/ecat/ecfr"
+	"time"
 )
 
 type Commander interface {
@@ -49,6 +50,15 @@ func ChooseDefaultError(cmd *ExecutingCommand) error {
 	return cmd.Error
 }
 
+func IsNoFrame(err error) bool {
+	return err == NoFrame
+}
+
+func IsWorkingCounterError(err error) bool {
+	_, ok := err.(WorkingCounterError)
+	return ok
+}
+
 func ChooseWorkingCounterError(ec *ExecutingCommand, expwc uint16) error {
 	havewc := ec.DatagramIn.WorkingCounter
 	if expwc != havewc {
@@ -62,72 +72,126 @@ func ChooseWorkingCounterError(ec *ExecutingCommand, expwc uint16) error {
 	return nil
 }
 
+const (
+	DefaultFramelossTries = 3
+)
+
+type Options struct {
+	FramelossTries int
+	WCDeadline     time.Time
+}
+
+func (o Options) getFramelossTries() int {
+	if o.FramelossTries == 0 {
+		return DefaultFramelossTries
+	}
+	return o.FramelossTries
+}
+func (o Options) getWCDeadline() time.Time { return o.WCDeadline }
+
 func ExecuteRead(c Commander, ct ecfr.CommandType, addr ecfr.DatagramAddress, n int, expwc uint16) (d []byte, err error) {
-	var ec *ExecutingCommand
-	ec, err = c.New(n)
-	if err != nil {
+	return ExecuteReadOptions(c, ct, addr, n, expwc, Options{})
+}
+
+func ExecuteReadOptions(c Commander, ct ecfr.CommandType, addr ecfr.DatagramAddress, n int, expwc uint16, opts Options) (d []byte, err error) {
+	nFrameLoss := 0
+
+	for {
+		var ec *ExecutingCommand
+		ec, err = c.New(n)
+		if err != nil {
+			return
+		}
+
+		dgo := ec.DatagramOut
+		err = dgo.SetDataLen(n)
+		if err != nil {
+			return
+		}
+
+		dgo.Command = ct
+		dgo.Addr32 = addr.Addr32()
+
+		err = c.Cycle()
+		if err != nil {
+			return
+		}
+
+		err = ChooseDefaultError(ec)
+		if err != nil {
+			if IsNoFrame(err) {
+				nFrameLoss++
+				if nFrameLoss < opts.getFramelossTries() {
+					continue
+				}
+			}
+			return
+		}
+
+		err = ChooseWorkingCounterError(ec, expwc)
+		if err != nil {
+			now := time.Now()
+			if now.Before(opts.getWCDeadline()) {
+				continue
+			}
+		}
+
+		d = ec.DatagramIn.Data()
 		return
 	}
 
-	dgo := ec.DatagramOut
-	err = dgo.SetDataLen(n)
-	if err != nil {
-		return
-	}
-
-	dgo.Command = ct
-	dgo.Addr32 = addr.Addr32()
-
-	err = c.Cycle()
-	if err != nil {
-		return
-	}
-
-	err = ChooseDefaultError(ec)
-	if err != nil {
-		return
-	}
-
-	err = ChooseWorkingCounterError(ec, expwc)
-	if err != nil {
-		return
-	}
-
-	d = ec.DatagramIn.Data()
-	return
+	panic("not reached")
 }
 
 func ExecuteWrite(c Commander, ct ecfr.CommandType, addr ecfr.DatagramAddress, w []byte, expwc uint16) (err error) {
-	var ec *ExecutingCommand
-	ec, err = c.New(len(w))
-	if err != nil {
+	return ExecuteWriteOptions(c, ct, addr, w, expwc, Options{})
+}
+
+func ExecuteWriteOptions(c Commander, ct ecfr.CommandType, addr ecfr.DatagramAddress, w []byte, expwc uint16, opts Options) (err error) {
+	nFrameLoss := 0
+
+	for {
+		var ec *ExecutingCommand
+		ec, err = c.New(len(w))
+		if err != nil {
+			return
+		}
+
+		dgo := ec.DatagramOut
+		err = dgo.SetDataLen(len(w))
+		if err != nil {
+			return
+		}
+		copy(dgo.Data(), w)
+
+		dgo.Command = ct
+		dgo.Addr32 = addr.Addr32()
+
+		err = c.Cycle()
+		if err != nil {
+			return
+		}
+
+		err = ChooseDefaultError(ec)
+		if err != nil {
+			if IsNoFrame(err) {
+				nFrameLoss++
+				if nFrameLoss < opts.getFramelossTries() {
+					continue
+				}
+			}
+			return
+		}
+
+		err = ChooseWorkingCounterError(ec, expwc)
+		if err != nil {
+			now := time.Now()
+			if now.Before(opts.getWCDeadline()) {
+				continue
+			}
+		}
+
 		return
 	}
 
-	dgo := ec.DatagramOut
-	err = dgo.SetDataLen(len(w))
-	if err != nil {
-		return
-	}
-	copy(dgo.Data(), w)
-
-	dgo.Command = ct
-	dgo.Addr32 = addr.Addr32()
-
-	err = c.Cycle()
-	if err != nil {
-		return
-	}
-
-	err = ChooseDefaultError(ec)
-	if err != nil {
-		return
-	}
-
-	err = ChooseWorkingCounterError(ec, expwc)
-	if err != nil {
-		return
-	}
-
-	return
 }
