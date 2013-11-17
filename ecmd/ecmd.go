@@ -89,12 +89,24 @@ func (o Options) getFramelossTries() int {
 }
 func (o Options) getWCDeadline() time.Time { return o.WCDeadline }
 
-func ExecuteRead(c Commander, ct ecfr.CommandType, addr ecfr.DatagramAddress, n int, expwc uint16) (d []byte, err error) {
-	return ExecuteReadOptions(c, ct, addr, n, expwc, Options{})
+func ExecuteRead(c Commander, addr ecfr.DatagramAddress, n int, expwc uint16) (d []byte, err error) {
+	return ExecuteReadOptions(c, addr, n, expwc, Options{})
 }
 
-func ExecuteReadOptions(c Commander, ct ecfr.CommandType, addr ecfr.DatagramAddress, n int, expwc uint16, opts Options) (d []byte, err error) {
+func ExecuteReadOptions(c Commander, addr ecfr.DatagramAddress, n int, expwc uint16, opts Options) (d []byte, err error) {
 	nFrameLoss := 0
+
+	var ct ecfr.CommandType
+	switch addr.Type() {
+	case ecfr.Positional:
+		ct = ecfr.APRD
+	case ecfr.Fixed:
+		ct = ecfr.FPRD
+	case ecfr.Broadcast:
+		ct = ecfr.BRD
+	default:
+		err = fmt.Errorf("ExecuteReadOptions: unsupported address type %v", addr.Type())
+	}
 
 	for {
 		var ec *ExecutingCommand
@@ -143,12 +155,24 @@ func ExecuteReadOptions(c Commander, ct ecfr.CommandType, addr ecfr.DatagramAddr
 	panic("not reached")
 }
 
-func ExecuteWrite(c Commander, ct ecfr.CommandType, addr ecfr.DatagramAddress, w []byte, expwc uint16) (err error) {
-	return ExecuteWriteOptions(c, ct, addr, w, expwc, Options{})
+func ExecuteWrite(c Commander, addr ecfr.DatagramAddress, w []byte, expwc uint16) (err error) {
+	return ExecuteWriteOptions(c, addr, w, expwc, Options{})
 }
 
-func ExecuteWriteOptions(c Commander, ct ecfr.CommandType, addr ecfr.DatagramAddress, w []byte, expwc uint16, opts Options) (err error) {
+func ExecuteWriteOptions(c Commander, addr ecfr.DatagramAddress, w []byte, expwc uint16, opts Options) (err error) {
 	nFrameLoss := 0
+
+	var ct ecfr.CommandType
+	switch addr.Type() {
+	case ecfr.Positional:
+		ct = ecfr.APWR
+	case ecfr.Fixed:
+		ct = ecfr.FPWR
+	case ecfr.Broadcast:
+		ct = ecfr.BWR
+	default:
+		err = fmt.Errorf("ExecuteWriteOptions: unsupported address type %v", addr.Type())
+	}
 
 	for {
 		var ec *ExecutingCommand
