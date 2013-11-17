@@ -1,6 +1,7 @@
 package ecfr
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 )
@@ -132,4 +133,15 @@ func (f *Frame) NewDatagram(datalen int) (*Datagram, error) {
 	}
 	panic("datalen too high")
 	return nil, errors.New("datalen too high")
+}
+
+func (f *Frame) MultilineSummary() string {
+	b := bytes.NewBuffer(nil)
+	fmt.Fprintf(b, "frame len %#03x\n", f.ByteLen())
+	for _, dgram := range f.Datagrams {
+		b.WriteString("  ")
+		b.WriteString(dgram.Summary())
+		b.WriteString("\n")
+	}
+	return b.String()
 }
