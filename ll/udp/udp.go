@@ -2,6 +2,7 @@ package udp
 
 import (
 	"code.google.com/p/go.net/ipv4"
+	"fmt"
 	"github.com/distributed/ecat/ecfr"
 	"net"
 	"time"
@@ -26,6 +27,8 @@ type UDPFramer struct {
 	laddr     *net.UDPAddr
 	groupaddr *net.UDPAddr
 	cycletime time.Duration
+
+	cycnum int
 }
 
 func NewUDPFramer(iface *net.Interface, group net.IP, cycletime time.Duration) (f *UDPFramer, err error) {
@@ -78,6 +81,10 @@ func (f *UDPFramer) New(maxdatalen int) (fr *ecfr.Frame, err error) {
 }
 
 func (f *UDPFramer) Cycle() (iframes []*ecfr.Frame, err error) {
+	defer func() {
+		f.cycnum++
+		f.oframes = nil
+	}()
 	// TODO: send/receive concurrently to be independent of queue depth?
 
 	// TODO: write deadline?
@@ -92,17 +99,26 @@ func (f *UDPFramer) Cycle() (iframes []*ecfr.Frame, err error) {
 		if err != nil {
 			return
 		}
+		//fmt.Printf("cycnum %d out %s", f.cycnum, oframe.MultilineSummary())
 	}
 
-	f.oframes = nil
-
 	err = f.sock.SetReadDeadline(time.Now().Add(f.cycletime))
+	if err != nil {
+		return
+	}
 
+	stretchcnt := 0
 	rbuf := make([]byte, udpReceiveBuflen)
 	for {
 		var n int
 		n, _, err = f.sock.ReadFromUDP(rbuf)
 		if isTimeout(err) {
+			if stretchcnt < 10 && len(iframes) < len(f.oframes) {
+				fmt.Printf("================================= activating cycle stretching %d =======\n", stretchcnt)
+				stretchcnt++
+				f.sock.SetReadDeadline(time.Now().Add(1 * f.cycletime))
+				continue
+			}
 			err = nil
 			break
 		}
@@ -117,6 +133,7 @@ func (f *UDPFramer) Cycle() (iframes []*ecfr.Frame, err error) {
 			continue
 		}
 
+		//fmt.Printf("cycnum %d in %s", f.cycnum, fr.MultilineSummary())
 		iframes = append(iframes, &fr)
 		rbuf = make([]byte, udpReceiveBuflen)
 	}
