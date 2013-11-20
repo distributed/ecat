@@ -2,7 +2,6 @@ package udp
 
 import (
 	"code.google.com/p/go.net/ipv4"
-	"fmt"
 	"github.com/distributed/ecat/ecfr"
 	"net"
 	"time"
@@ -114,7 +113,7 @@ func (f *UDPFramer) Cycle() (iframes []*ecfr.Frame, err error) {
 		n, _, err = f.sock.ReadFromUDP(rbuf)
 		if isTimeout(err) {
 			if stretchcnt < 10 && len(iframes) < len(f.oframes) {
-				fmt.Printf("================================= activating cycle stretching %d =======\n", stretchcnt)
+				//fmt.Printf("================================= activating cycle stretching %d =======\n", stretchcnt)
 				stretchcnt++
 				f.sock.SetReadDeadline(time.Now().Add(1 * f.cycletime))
 				continue
