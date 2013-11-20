@@ -18,6 +18,7 @@ const (
 	ALControl    = 0x0120
 	ALStatus     = 0x0130
 	ALStatusCode = 0x0134
+	PDIControl   = 0x0140
 
 	ECATEventMask = 0x0200
 
