@@ -256,6 +256,31 @@ type DatagramAddress struct {
 	typ  DatagramAddressType
 }
 
+func (d DatagramAddress) String() string {
+	b := bytes.NewBuffer(nil)
+	switch d.Type() {
+	case Positional:
+		b.WriteByte('p')
+	case Fixed:
+		b.WriteByte('f')
+	case Broadcast:
+		b.WriteByte('b')
+	case Logical:
+		b.WriteByte('l')
+	default:
+		b.WriteByte('U')
+	}
+
+	switch d.Type() {
+	case Logical:
+		fmt.Fprintf(b, "%08x", d.addr)
+	default:
+		fmt.Fprintf(b, "%04x.%04x", uint16(d.addr), uint16(d.addr>>16))
+	}
+
+	return b.String()
+}
+
 func (d DatagramAddress) Addr32() uint32 {
 	return d.addr
 }
@@ -303,6 +328,10 @@ func (d *DatagramAddress) IsPhysical() bool {
 
 func PositionalAddr(position int16, offset uint16) DatagramAddress {
 	return DatagramAddress{uint32(uint16(position)) | uint32(offset)<<16, Positional}
+}
+
+func FixedAddr(stationaddr uint16, offset uint16) DatagramAddress {
+	return DatagramAddress{uint32(stationaddr) | uint32(offset)<<16, Fixed}
 }
 
 var datagramAddressByOperation = map[CommandType]DatagramAddressType{
