@@ -31,5 +31,12 @@ const (
 
 	FMMUBase = 0x0600
 
-	SyncMangerBase = 0x0800
+	SyncMangerBase                 = 0x0800
+	SyncManagerChannelLen          = 0x08
+	SyncManagerPhysStartAddrOffset = 0x00
+	SyncManagerLengthOffset        = 0x02
+	SyncManagerControlOffset       = 0x04
+	SyncManagerStatusOffset        = 0x05
+	SyncManagerActivateOffset      = 0x06
+	SyncManagerPDIControlOffset    = 0x07
 )
