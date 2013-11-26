@@ -60,11 +60,14 @@ func (cf *CommandFramer) New(datalen int) (*ExecutingCommand, error) {
 	}
 
 	var dg *ecfr.Datagram
+	//fmt.Printf("want NewDatagram datalen %d\n", datalen)
 	dg, err = cf.currentFrame.NewDatagram(datalen)
 	if err != nil {
 		return nil, err
 	}
 	cf.currentDgram = dg
+
+	cf.currentFrameOffset += uint16(dbgl)
 
 	cmd := &ExecutingCommand{
 		DatagramOut: dg,
