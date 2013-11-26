@@ -127,7 +127,7 @@ func (m *Multiplexer) OpenCommander() (Commander, error) {
 	req := openCommander{make(chan openCommanderResponse)}
 	m.reqchan <- req
 	resp := <-req.responseChan
-	return resp.Commander, resp.error
+	return resp.Commander, resp.err
 }
 
 func (c *Multiplexer) Cycle() error {
@@ -190,8 +190,8 @@ type openCommander struct {
 }
 
 type openCommanderResponse struct {
-	Commander
-	error
+	Commander Commander
+	err       error
 }
 
 type cyclingChan struct {
