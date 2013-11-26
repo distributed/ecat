@@ -78,6 +78,9 @@ func (cf *CommandFramer) New(datalen int) (*ExecutingCommand, error) {
 
 func (cf *CommandFramer) finishFrame() {
 	if len(cf.currentFrame.Datagrams) > 0 {
+		for i := 0; i < len(cf.currentFrame.Datagrams)-1; i++ {
+			cf.currentFrame.Datagrams[i].SetLast(false)
+		}
 		cf.currentFrame.Datagrams[0].Index = cf.currentIndex
 		cf.currentFrame.Datagrams[len(cf.currentFrame.Datagrams)-1].SetLast(true)
 		cf.frameQueue = append(cf.frameQueue, outgoingFrame{cf.currentFrame, cf.currentCmds})
