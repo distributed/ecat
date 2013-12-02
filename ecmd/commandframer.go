@@ -231,7 +231,23 @@ func (cf *CommandFramer) Close() error {
 	return nil
 }
 
+func (cf *CommandFramer) DebugMessage(m string) {
+	if dm, ok := cf.framer.(debugMessager); ok {
+		dm.DebugMessage(m)
+	}
+}
+
 type Framer interface {
 	New(maxdatalen int) (*ecfr.Frame, error)
 	Cycle() ([]*ecfr.Frame, error)
+}
+
+type debugMessager interface {
+	DebugMessage(string)
+}
+
+func printDebugMessage(p interface{}, m string) {
+	if dm, ok := p.(debugMessager); ok {
+		dm.DebugMessage(m)
+	}
 }

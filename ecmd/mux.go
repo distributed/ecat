@@ -165,6 +165,10 @@ func (mc *muxChannel) Close() error {
 	return errors.New("nimpl")
 }
 
+func (mc *muxChannel) DebugMessage(m string) {
+	printDebugMessage(mc.mux.c, m)
+}
+
 type muxChanNew struct {
 	*muxChannel
 	datalen      int

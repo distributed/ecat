@@ -150,6 +150,14 @@ func (f *UDPFramer) Close() error {
 	return nil
 }
 
+func (f *UDPFramer) DebugMessage(m string) {
+	addr := *f.groupaddr
+	addr.Port = 1024
+
+	// the error is intentionally ingored
+	f.sock.WriteTo([]byte(m), &addr)
+}
+
 type timeouter interface {
 	Timeout() bool
 }
