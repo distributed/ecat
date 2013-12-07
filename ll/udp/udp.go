@@ -96,6 +96,7 @@ func (f *UDPFramer) Cycle() (iframes []*ecfr.Frame, err error) {
 
 		_, err = f.sock.WriteTo(obytes, f.groupaddr)
 		if err != nil {
+			err = errorMask(err)
 			return
 		}
 		//fmt.Printf("cycnum %d out %s", f.cycnum, oframe.MultilineSummary())
