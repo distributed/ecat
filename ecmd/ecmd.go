@@ -158,11 +158,6 @@ func ExecuteReadOptions(c Commander, addr ecfr.DatagramAddress, n int, expwc uin
 		}
 
 		dgo := ec.DatagramOut
-		err = dgo.SetDataLen(n)
-		if err != nil {
-			return
-		}
-
 		dgo.Command = ct
 		dgo.Addr32 = addr.Addr32()
 
@@ -254,10 +249,6 @@ func ExecuteWriteOptions(c Commander, addr ecfr.DatagramAddress, w []byte, expwc
 		}
 
 		dgo := ec.DatagramOut
-		err = dgo.SetDataLen(len(w))
-		if err != nil {
-			return
-		}
 		copy(dgo.Data(), w)
 
 		dgo.Command = ct
