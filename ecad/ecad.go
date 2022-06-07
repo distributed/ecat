@@ -12,6 +12,8 @@ const (
 	ConfiguredStationAddress = 0x0010
 	ConfiguredStationAlias   = 0x0012
 
+	ESCResetECAT = 0x0040
+
 	DLControl = 0x0100
 	DLStatus  = 0x0110
 
