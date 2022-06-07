@@ -1,7 +1,7 @@
 package udp
 
 import (
-	"code.google.com/p/go.net/ipv4"
+	"golang.org/x/net/ipv4"
 	"github.com/distributed/ecat/ecfr"
 	"net"
 	"time"
