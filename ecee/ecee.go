@@ -19,6 +19,7 @@ type blindEEPROM struct {
 
 type EEPROM interface {
 	ReadWord(addr uint32) (word uint16, err error)
+	WriteWord(addr uint32, word uint16) (err error)
 	Close() error
 }
 
@@ -107,7 +108,7 @@ func (ee *blindEEPROM) ReadWord(addr uint32) (word uint16, err error) {
 		return
 	}
 
-	if rb[1]&0xf8 != 0x00 {
+	if rb[1]&0xE0 != 0x00 {
 		err = fmt.Errorf("EEPROM status word bits indicate error, bytes are % x\n", rb)
 		return
 	}
@@ -121,6 +122,74 @@ func (ee *blindEEPROM) ReadWord(addr uint32) (word uint16, err error) {
 	//fmt.Printf("EEPROM read 4 bytes: % x\n", rb)
 
 	word = uint16(rb[0]) | uint16(rb[1])<<8
+	return
+}
+
+func (ee *blindEEPROM) WriteWord(addr uint32, word uint16) (err error) {
+	if ee.closed {
+		err = errors.New("ecee eeprom is already closed")
+		return
+	}
+
+	err = ee.waitForIdle(0)
+	if err != nil {
+		return
+	}
+
+	dgaddr := ee.addr
+
+	// write EEPROM address to ESC
+	dgaddr.SetOffset(ecad.EEPROMAddress)
+	wb := make([]byte, 4)
+	wb[0] = uint8(addr)
+	wb[1] = uint8(addr >> 8)
+	wb[2] = uint8(addr >> 16)
+	wb[3] = uint8(addr >> 24)
+	err = ecmd.ExecuteWrite(ee.commander, dgaddr, wb, 1)
+	if err != nil {
+		return
+	}
+	
+	// write data
+	dgaddr.SetOffset(ecad.EEPROMData)
+	wb = []byte{uint8(word), uint8(word >> 8)}
+	err = ecmd.ExecuteWrite(ee.commander, dgaddr, wb, 1)
+	if err != nil {
+		return
+	}
+
+	// write "write command"
+	dgaddr.SetOffset(ecad.EEPROMControlStatus)
+	wb = []byte{0x01, 0x02} // write command
+	err = ecmd.ExecuteWrite(ee.commander, dgaddr, wb, 1)
+	if err != nil {
+		return
+	}
+
+	err = ee.waitForIdle(0)
+	if err != nil {
+		return
+	}
+
+	// check error bits
+	dgaddr.SetOffset(ecad.EEPROMControlStatus)
+	var rb []byte
+	rb, err = ecmd.ExecuteRead(ee.commander, dgaddr, 2, 1)
+	if err != nil {
+		return
+	}
+
+	if rb[1]&0xE0 != 0x00 {
+		err = fmt.Errorf("EEPROM status word bits indicate error, bytes are % x\n", rb)
+		return
+	}
+
+	dgaddr.SetOffset(ecad.EEPROMData)
+	rb, err = ecmd.ExecuteRead(ee.commander, dgaddr, 4, 1)
+	if err != nil {
+		return
+	}
+	
 	return
 }
 
