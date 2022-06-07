@@ -1,7 +1,7 @@
 package raweni
 
 import (
-	"code.google.com/p/go-charset/charset"
+	"github.com/rogpeppe/go-charset/charset"
 	"encoding/xml"
 	"github.com/davecgh/go-spew/spew"
 	"io"
@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-import _ "code.google.com/p/go-charset/data"
+import _ "github.com/rogpeppe/go-charset/data"
 
 func ReadEtherCATInfoFromFile(filename string) (eci EtherCATInfo, err error) {
 	var r io.Reader
